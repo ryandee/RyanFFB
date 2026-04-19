@@ -90,40 +90,41 @@ def import_season(year):
         reg_season_weeks,
     ))
 
-    # league.current_week is the true last week for historical seasons.
-    # Requesting a week beyond it silently returns current-week data (no exception),
-    # so we must use it as our ceiling rather than catching exceptions.
-    max_weeks = getattr(league, "current_week", reg_season_weeks + 4)
-    for week in range(1, max_weeks + 1):
-        try:
-            box_scores = league.box_scores(week=week)
-        except Exception:
-            break
-        if not box_scores:
-            break
+    # Extract matchups from team.schedule / team.scores — already loaded in memory,
+    # no extra HTTP requests needed (and works for all years including pre-2019).
+    seen = set()
+    for team in league.teams:
+        for week_idx, opponent in enumerate(team.schedule):
+            week = week_idx + 1
+            if not hasattr(opponent, "team_id"):
+                continue  # bye / unresolved slot
 
-        is_playoff = 1 if week > reg_season_weeks else 0
-        for bs in box_scores:
-            # Skip byes / empty slots
-            if not hasattr(bs, "home_team") or bs.home_team == 0:
+            # Each matchup appears from both teams' view — only store it once
+            pair = (min(team.team_id, opponent.team_id),
+                    max(team.team_id, opponent.team_id), week)
+            if pair in seen:
                 continue
-            if not hasattr(bs, "away_team") or bs.away_team == 0:
-                continue
-            try:
-                conn.execute("""
-                    INSERT INTO matchups
-                      (year, week, home_owner, home_team, away_owner, away_team,
-                       home_score, away_score, is_playoff)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    year, week,
-                    bs.home_team.owner, bs.home_team.team_name,
-                    bs.away_team.owner, bs.away_team.team_name,
-                    bs.home_score, bs.away_score,
-                    is_playoff,
-                ))
-            except Exception:
-                continue
+            seen.add(pair)
+
+            home_score = team.scores[week_idx] if week_idx < len(team.scores) else 0
+            away_score = (opponent.scores[week_idx]
+                          if week_idx < len(opponent.scores) else 0)
+
+            if home_score == 0 and away_score == 0:
+                continue  # future / unplayed week
+
+            is_playoff = 1 if week > reg_season_weeks else 0
+            conn.execute("""
+                INSERT INTO matchups
+                  (year, week, home_owner, home_team, away_owner, away_team,
+                   home_score, away_score, is_playoff)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                year, week,
+                team.owner, team.team_name,
+                opponent.owner, opponent.team_name,
+                home_score, away_score, is_playoff,
+            ))
 
     conn.commit()
     conn.close()
