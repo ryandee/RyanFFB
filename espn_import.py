@@ -37,7 +37,20 @@ def _fetch(year):
                f"/leagueHistory/{LEAGUE_ID}")
         params = {"view": views, "seasonId": year}
 
-    resp = requests.get(url, params=params, cookies=cookies, timeout=30)
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        "Referer": "https://www.espn.com/fantasy/football/",
+        "X-Fantasy-Source": "kona",
+        "X-Fantasy-Platform": "kona-PROD-c8d871c2f41726e3f09a7bbed0f5c0c7a0d6d9d7",
+        "Accept": "application/json",
+    }
+
+    resp = requests.get(url, params=params, cookies=cookies,
+                        headers=headers, timeout=30)
     resp.raise_for_status()
     data = resp.json()
     # leagueHistory returns a list; grab the first element
@@ -48,6 +61,11 @@ def import_season(year):
     _log(f"Fetching {year}...")
     try:
         data = _fetch(year)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else "?"
+        _log(f"  HTTP {status} error for {year} — "
+             f"{'private league? Check ESPN_S2/SWID in config.py' if status == 401 else exc}")
+        return False
     except Exception as exc:
         _log(f"  Error fetching {year}: {exc}")
         return False
