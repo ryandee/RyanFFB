@@ -275,6 +275,37 @@ def api_import_status():
     return jsonify(espn_import.import_status)
 
 
+@app.route("/api/test-connection")
+def api_test_connection():
+    from config import LEAGUE_ID, CURRENT_YEAR, ESPN_S2, SWID
+    import requests as req
+    cookies = {}
+    if ESPN_S2 and SWID:
+        cookies = {"espn_s2": ESPN_S2, "SWID": SWID}
+    url = (f"https://fantasy.espn.com/apis/v3/games/ffl"
+           f"/seasons/{CURRENT_YEAR}/segments/0/leagues/{LEAGUE_ID}")
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json",
+        "Referer": "https://www.espn.com/fantasy/football/",
+    }
+    try:
+        r = req.get(url, params={"view": "mSettings"}, cookies=cookies,
+                    headers=headers, timeout=15)
+        if r.headers.get("content-type", "").startswith("application/json"):
+            d = r.json()
+            name = d.get("settings", {}).get("name", "Unknown League")
+            return jsonify({"ok": True, "message": f'Connected! League: "{name}"'})
+        else:
+            if not ESPN_S2 or not SWID:
+                return jsonify({"ok": False,
+                    "message": "ESPN returned HTML — league is private. Add ESPN_S2 and SWID to config.py."})
+            return jsonify({"ok": False,
+                "message": "ESPN returned HTML even with cookies — double-check ESPN_S2 and SWID values."})
+    except Exception as exc:
+        return jsonify({"ok": False, "message": str(exc)})
+
+
 @app.route("/api/chart/points-by-season")
 def chart_points_by_season():
     conn = get_db()

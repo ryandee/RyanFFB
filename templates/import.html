@@ -38,9 +38,13 @@
     <div class="card">
       <div class="card-header"><strong><i class="bi bi-play-circle-fill"></i> Run Import</strong></div>
       <div class="card-body">
+        <button class="btn btn-outline-secondary me-2 mb-3" onclick="testConnection()">
+          <i class="bi bi-plug"></i> Test Connection
+        </button>
         <button id="import-btn" class="btn btn-primary btn-lg mb-3" onclick="startImport()">
           <i class="bi bi-cloud-arrow-down"></i> Import Now
         </button>
+        <div id="test-result" class="mb-3 d-none"></div>
         <div id="status-box" class="d-none">
           <div class="d-flex align-items-center gap-2 mb-2">
             <div class="spinner-border spinner-border-sm text-primary" id="spinner"></div>

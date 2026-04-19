@@ -28,13 +28,12 @@ def _fetch(year):
 
     views = ["mTeam", "mMatchupScore", "mSettings", "mStandings"]
 
-    if year >= 2019:
-        url = (f"https://fantasy.espn.com/apis/v3/games/ffl"
-               f"/seasons/{year}/segments/0/leagues/{LEAGUE_ID}")
+    BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl"
+    if year >= 2018:
+        url    = f"{BASE}/seasons/{year}/segments/0/leagues/{LEAGUE_ID}"
         params = {"view": views}
     else:
-        url = (f"https://fantasy.espn.com/apis/v3/games/ffl"
-               f"/leagueHistory/{LEAGUE_ID}")
+        url    = f"{BASE}/leagueHistory/{LEAGUE_ID}"
         params = {"view": views, "seasonId": year}
 
     headers = {
