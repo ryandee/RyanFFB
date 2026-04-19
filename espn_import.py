@@ -194,7 +194,7 @@ def import_season(year):
 
     conn.commit()
     conn.close()
-    _log(f"  ✓ {year}: {len(team_map)} teams, "
+    _log(f"  OK {year}: {len(team_map)} teams, "
          f"{reg_weeks} reg-season weeks, {matchup_count} matchups stored")
     return True
 
@@ -205,7 +205,7 @@ def run_full_import():
     import_status["log"]     = []
 
     init_db()
-    _log(f"Importing seasons {START_YEAR}–{CURRENT_YEAR}…")
+    _log(f"Importing seasons {START_YEAR}-{CURRENT_YEAR}...")
 
     ok    = 0
     total = CURRENT_YEAR - START_YEAR + 1
@@ -213,7 +213,7 @@ def run_full_import():
         if import_season(year):
             ok += 1
 
-    _log(f"\nDone — {ok}/{total} seasons imported successfully.")
+    _log(f"\nDone - {ok}/{total} seasons imported successfully.")
     import_status["running"] = False
     import_status["done"]    = True
 
