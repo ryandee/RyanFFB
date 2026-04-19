@@ -352,6 +352,51 @@ def sacko():
         has_data=_has_data(),
     )
 
+@app.route("/draft")
+def draft():
+    conn = get_db()
+
+    # Best value: highest scorers drafted in round 5 or later
+    best_value = conn.execute("""
+        SELECT d.overall_pick, d.round, d.round_pick, d.player_name,
+               d.position, d.nfl_team, d.team_owner, d.year, r.total_points
+        FROM draft_picks d
+        JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+        WHERE d.round >= 5 AND r.total_points > 0
+        ORDER BY r.total_points DESC
+        LIMIT 20
+    """).fetchall()
+
+    # Biggest busts: lowest scorers drafted in rounds 1-2
+    busts = conn.execute("""
+        SELECT d.overall_pick, d.round, d.round_pick, d.player_name,
+               d.position, d.nfl_team, d.team_owner, d.year, r.total_points
+        FROM draft_picks d
+        JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+        WHERE d.round <= 2 AND r.total_points > 0
+        ORDER BY r.total_points ASC
+        LIMIT 20
+    """).fetchall()
+
+    # Per-round average points (for the chart reference line)
+    round_avgs = conn.execute("""
+        SELECT d.round, ROUND(AVG(r.total_points), 1) AS avg_pts, COUNT(*) AS picks
+        FROM draft_picks d
+        JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+        WHERE d.round > 0 AND r.total_points > 0
+        GROUP BY d.round
+        ORDER BY d.round
+    """).fetchall()
+
+    conn.close()
+    return render_template("draft.html",
+        league_name=LEAGUE_NAME,
+        best_value=best_value,
+        busts=busts,
+        round_avgs=round_avgs,
+        has_data=_has_data(),
+    )
+
 
 @app.route("/import", methods=["GET", "POST"])
 def import_view():
@@ -440,6 +485,57 @@ def chart_points_by_season():
         })
 
     return jsonify({"labels": years, "datasets": datasets})
+
+
+@app.route("/api/chart/draft-value")
+def chart_draft_value():
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT d.overall_pick, d.player_name, d.position, d.team_owner,
+               d.year, d.round, r.total_points
+        FROM draft_picks d
+        JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+        WHERE d.overall_pick > 0 AND r.total_points > 0
+        ORDER BY d.overall_pick
+    """).fetchall()
+    conn.close()
+
+    pos_colors = {
+        "QB":  "rgba(54,  162, 235, 0.75)",
+        "RB":  "rgba(75,  192, 100, 0.75)",
+        "WR":  "rgba(255, 206,  86, 0.75)",
+        "TE":  "rgba(255, 100,  64, 0.75)",
+        "K":   "rgba(153, 102, 255, 0.75)",
+        "DST": "rgba(201, 203, 207, 0.75)",
+    }
+
+    # Group points by position for separate scatter datasets
+    by_pos = {}
+    for r in rows:
+        pos = r["position"] if r["position"] in pos_colors else "UNK"
+        by_pos.setdefault(pos, []).append({
+            "x":      r["overall_pick"],
+            "y":      round(r["total_points"], 1),
+            # Extra fields surfaced in tooltip via custom plugin
+            "player": r["player_name"],
+            "owner":  r["team_owner"],
+            "year":   r["year"],
+            "round":  r["round"],
+        })
+
+    datasets = []
+    for pos, color in pos_colors.items():
+        if pos not in by_pos:
+            continue
+        datasets.append({
+            "label":           pos,
+            "data":            by_pos[pos],
+            "backgroundColor": color,
+            "pointRadius":     5,
+            "pointHoverRadius": 8,
+        })
+
+    return jsonify({"datasets": datasets})
 
 
 # ── Entry point ────────────────────────────────────────────────────────────

@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Draft Analysis | {{ league_name }}{% endblock %}
+{% block content %}
+
+<h1 class="mb-2"><i class="bi bi-search text-info"></i> Draft Analysis</h1>
+<p class="text-muted mb-4">Pick value, steals, and busts across all league history.</p>
+
+<!-- Scatter chart -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">📈 Draft Pick Value (Pick # vs Season Points)</h5>
+  </div>
+  <div class="card-body">
+    <canvas id="draftValueChart" height="120"></canvas>
+  </div>
+</div>
+
+<!-- Best Value Picks -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">💎 Best Value Picks (Round 5+ Steals)</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th class="ps-3">Player</th>
+            <th>Pos</th>
+            <th>NFL</th>
+            <th>Year</th>
+            <th>Pick</th>
+            <th>Round</th>
+            <th>Owner</th>
+            <th class="pe-3">Season Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in best_value %}
+          <tr>
+            <td class="ps-3 fw-bold">{{ p['player_name'] }}</td>
+            <td><span class="badge bg-secondary">{{ p['position'] }}</span></td>
+            <td class="text-muted small">{{ p['nfl_team'] }}</td>
+            <td>{{ p['year'] }}</td>
+            <td class="text-muted">{{ p['overall_pick'] }}</td>
+            <td class="text-muted">Rd {{ p['round'] }}.{{ p['round_pick'] }}</td>
+            <td>{{ p['team_owner'] }}</td>
+            <td class="pe-3 text-success fw-bold">{{ "%.1f"|format(p['total_points']) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="text-center text-muted py-3">No data — run an import first.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Biggest Busts -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">💩 Biggest Busts (Round 1-2 Disappointments)</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th class="ps-3">Player</th>
+            <th>Pos</th>
+            <th>NFL</th>
+            <th>Year</th>
+            <th>Pick</th>
+            <th>Round</th>
+            <th>Owner</th>
+            <th class="pe-3">Season Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in busts %}
+          <tr>
+            <td class="ps-3 fw-bold">{{ p['player_name'] }}</td>
+            <td><span class="badge bg-secondary">{{ p['position'] }}</span></td>
+            <td class="text-muted small">{{ p['nfl_team'] }}</td>
+            <td>{{ p['year'] }}</td>
+            <td class="text-muted">{{ p['overall_pick'] }}</td>
+            <td class="text-muted">Rd {{ p['round'] }}.{{ p['round_pick'] }}</td>
+            <td>{{ p['team_owner'] }}</td>
+            <td class="pe-3 text-danger fw-bold">{{ "%.1f"|format(p['total_points']) }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8" class="text-center text-muted py-3">No data — run an import first.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Round averages -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">📊 Average Points by Draft Round</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th class="ps-3">Round</th>
+            <th>Avg Points</th>
+            <th class="pe-3">Players</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in round_avgs %}
+          <tr>
+            <td class="ps-3 fw-bold">Round {{ r['round'] }}</td>
+            <td>{{ "%.1f"|format(r['avg_pts']) }}</td>
+            <td class="pe-3 text-muted">{{ r['picks'] }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-center text-muted py-3">No data — run an import first.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+const POSITION_COLORS = {
+  QB:  "#e74c3c",
+  RB:  "#2ecc71",
+  WR:  "#3498db",
+  TE:  "#f39c12",
+  K:   "#9b59b6",
+  DST: "#1abc9c",
+  UNK: "#95a5a6",
+};
+
+fetch("/api/chart/draft-value")
+  .then(r => r.json())
+  .then(data => {
+    const datasets = Object.entries(data).map(([pos, points]) => ({
+      label: pos,
+      data: points,
+      backgroundColor: POSITION_COLORS[pos] || "#95a5a6",
+      pointRadius: 5,
+      pointHoverRadius: 8,
+    }));
+
+    new Chart(document.getElementById("draftValueChart"), {
+      type: "scatter",
+      data: { datasets },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: "top" },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const d = ctx.raw;
+                return [
+                  `${d.player} (${ctx.dataset.label})`,
+                  `Pick #${d.x}  —  ${d.y.toFixed(1)} pts`,
+                  `${d.owner}, ${d.year}  (Rd ${d.round})`,
+                ];
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            title: { display: true, text: "Overall Pick #" },
+            ticks: { color: "#adb5bd" },
+            grid:  { color: "rgba(255,255,255,0.08)" },
+          },
+          y: {
+            title: { display: true, text: "Season Fantasy Points" },
+            ticks: { color: "#adb5bd" },
+            grid:  { color: "rgba(255,255,255,0.08)" },
+          },
+        },
+      },
+    });
+  })
+  .catch(err => console.error("Draft chart error:", err));
+</script>
+{% endblock %}
