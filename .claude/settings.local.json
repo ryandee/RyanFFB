@@ -5,7 +5,16 @@
       "Bash(python app.py)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:5000/)",
       "Bash(pkill -f \"python app.py\")",
-      "Bash(python espn_import.py)"
+      "Bash(python espn_import.py)",
+      "Bash(python -c \"from app import app; print\\([str\\(r\\) for r in app.url_map.iter_rules\\(\\)]\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:5000/sacko)",
+      "Bash(pkill -f \"python\")",
+      "Bash(cmd.exe /c \"netstat -ano | findstr :5000\")",
+      "Bash(cmd.exe /c \"netstat -ano | findstr LISTEN | findstr :5000\")",
+      "Bash(cmd.exe /c \"tasklist | findstr python\")",
+      "Bash(cmd.exe /c \"start /B python C:\\\\Users\\\\dalyr\\\\RyanFFB\\\\app.py > C:\\\\Users\\\\dalyr\\\\RyanFFB\\\\data\\\\server.log 2>&1\")",
+      "Bash(cmd.exe /c \"where python\")",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")"
     ]
   }
 }
