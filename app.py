@@ -434,7 +434,9 @@ def draft():
         sacko_counts AS (
             SELECT d.round_pick, COUNT(*) AS sackos
             FROM draft_picks d
-            JOIN seasons s ON s.year = d.year AND s.sacko_owner = d.team_owner
+            JOIN teams t ON t.year = d.year AND t.final_standing = (
+            SELECT MAX(final_standing) FROM teams t2 WHERE t2.year = t.year
+        )
             WHERE d.round = 1
             GROUP BY d.round_pick
         )
