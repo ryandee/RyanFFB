@@ -90,8 +90,10 @@ def import_season(year):
         reg_season_weeks,
     ))
 
-    # Fetch weekly matchup scores
-    max_weeks = reg_season_weeks + 5  # include up to 5 playoff weeks
+    # league.current_week is the true last week for historical seasons.
+    # Requesting a week beyond it silently returns current-week data (no exception),
+    # so we must use it as our ceiling rather than catching exceptions.
+    max_weeks = getattr(league, "current_week", reg_season_weeks + 4)
     for week in range(1, max_weeks + 1):
         try:
             box_scores = league.box_scores(week=week)
