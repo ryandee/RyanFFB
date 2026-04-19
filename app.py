@@ -426,7 +426,7 @@ def draft():
         best_value=best_value,
         busts=busts,
         round_avgs=round_avgs,
-        pick1_finish=pick1_finish,
+        pick1_finish=[dict(r) for r in pick1_finish],
         has_data=_has_data(),
     )
 
