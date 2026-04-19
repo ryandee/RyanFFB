@@ -408,6 +408,24 @@ def draft():
         ORDER BY d.round
     """).fetchall()
 
+    # Championships won by teams holding each round-1 pick slot
+    pick1_champs = conn.execute("""
+        WITH all_slots AS (
+            SELECT DISTINCT round_pick FROM draft_picks WHERE round = 1
+        ),
+        champ_counts AS (
+            SELECT d.round_pick, COUNT(*) AS championships
+            FROM draft_picks d
+            JOIN seasons s ON s.year = d.year AND s.champion_owner = d.team_owner
+            WHERE d.round = 1
+            GROUP BY d.round_pick
+        )
+        SELECT a.round_pick, COALESCE(c.championships, 0) AS championships
+        FROM all_slots a
+        LEFT JOIN champ_counts c ON c.round_pick = a.round_pick
+        ORDER BY a.round_pick
+    """).fetchall()
+
     # Average final standings position for each round-1 pick slot
     pick1_finish = conn.execute("""
         SELECT d.round_pick,
@@ -427,6 +445,7 @@ def draft():
         busts=busts,
         round_avgs=round_avgs,
         pick1_finish=[dict(r) for r in pick1_finish],
+        pick1_champs=[dict(r) for r in pick1_champs],
         has_data=_has_data(),
     )
 

@@ -26,6 +26,16 @@
   </div>
 </div>
 
+<!-- Round 1 pick slot championships -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">🏆 Championships Won by Round 1 Pick Slot</h5>
+  </div>
+  <div class="card-body">
+    <canvas id="pick1ChampsChart" height="80" data-picks='{{ pick1_champs | tojson }}'></canvas>
+  </div>
+</div>
+
 <!-- Best Value Picks -->
 <div class="card mb-4">
   <div class="card-header">
@@ -201,6 +211,50 @@ if (pick1Data.length) {
           min: 1,
           title: { display: true, text: "Avg Final Standing (1 = best)" },
           ticks: { stepSize: 1, color: "#adb5bd" },
+          grid: { color: "rgba(255,255,255,0.08)" },
+        },
+        x: {
+          title: { display: true, text: "Round 1 Pick Slot" },
+          ticks: { color: "#adb5bd" },
+          grid: { display: false },
+        },
+      },
+    },
+  });
+}
+
+// Championships by round 1 pick slot
+const champs1Raw = document.getElementById("pick1ChampsChart").dataset.picks;
+const champs1Data = JSON.parse(champs1Raw || "[]");
+if (champs1Data.length) {
+  new Chart(document.getElementById("pick1ChampsChart"), {
+    type: "bar",
+    data: {
+      labels: champs1Data.map(r => `1.${r.round_pick}`),
+      datasets: [{
+        label: "Championships",
+        data: champs1Data.map(r => r.championships),
+        backgroundColor: champs1Data.map(r =>
+          r.championships > 0 ? "rgba(255,193,7,0.8)" : "rgba(108,117,125,0.4)"
+        ),
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw} championship${ctx.raw !== 1 ? "s" : ""}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: "#adb5bd" },
+          title: { display: true, text: "Championships Won" },
           grid: { color: "rgba(255,255,255,0.08)" },
         },
         x: {
