@@ -440,7 +440,7 @@ def draft():
             WHERE d.round = 1
             GROUP BY d.round_pick
         )
-        SELECT a.round_pick, COALESCE(c.sackos, 0) AS championships
+        SELECT a.round_pick, COALESCE(c.sackos, 0) AS sackos
         FROM all_slots a
         LEFT JOIN sacko_counts c ON c.round_pick = a.round_pick
         ORDER BY a.round_pick

@@ -277,6 +277,50 @@ if (champs1Data.length) {
   });
 }
 
+// Sackos by round 1 pick slot
+const sackos1Raw = document.getElementById("pick1SackosChart").dataset.picks;
+const sackos1Data = JSON.parse(sackos1Raw || "[]");
+if (sackos1Data.length) {
+  new Chart(document.getElementById("pick1SackosChart"), {
+    type: "bar",
+    data: {
+      labels: sackos1Data.map(r => `1.${r.round_pick}`),
+      datasets: [{
+        label: "Sackos",
+        data: sackos1Data.map(r => r.sackos),
+        backgroundColor: sackos1Data.map(r =>
+          r.sackos > 0 ? "rgba(220,53,69,0.8)" : "rgba(108,117,125,0.4)"
+        ),
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.raw} sacko${ctx.raw !== 1 ? "s" : ""}`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: "#adb5bd" },
+          title: { display: true, text: "Sackos" },
+          grid: { color: "rgba(255,255,255,0.08)" },
+        },
+        x: {
+          title: { display: true, text: "Round 1 Pick Slot" },
+          ticks: { color: "#adb5bd" },
+          grid: { display: false },
+        },
+      },
+    },
+  });
+}
+
 fetch("/api/chart/draft-value")
   .then(r => r.json())
   .then(data => {
