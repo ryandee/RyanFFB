@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Import Data — {{ league_name }}{% endblock %}
+{% block content %}
+
+<h1 class="mb-2"><i class="bi bi-cloud-arrow-down-fill text-primary"></i> Import ESPN Data</h1>
+<p class="text-muted mb-4">
+  Fetch season data from ESPN for seasons {{ start_year }}–{{ current_year }}.
+  Existing data is replaced on each import.
+</p>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+
+    <!-- Config checklist -->
+    <div class="card mb-4">
+      <div class="card-header"><strong><i class="bi bi-gear-fill"></i> Setup Checklist</strong></div>
+      <div class="card-body">
+        <ol class="mb-0">
+          <li class="mb-2">
+            Open <code>config.py</code> and set your <strong>LEAGUE_ID</strong>
+            <br><small class="text-muted">Found in your ESPN league URL: <code>…leagueId=<strong>123456</strong></code></small>
+          </li>
+          <li class="mb-2">
+            Set <strong>START_YEAR</strong> and <strong>CURRENT_YEAR</strong>
+          </li>
+          <li class="mb-2">
+            For private leagues, add your <strong>ESPN_S2</strong> and <strong>SWID</strong> cookies
+            <br><small class="text-muted">
+              Log into ESPN → DevTools (F12) → Application → Cookies → espn.com
+            </small>
+          </li>
+          <li>Click <strong>Import Now</strong> below</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Import button & status -->
+    <div class="card">
+      <div class="card-header"><strong><i class="bi bi-play-circle-fill"></i> Run Import</strong></div>
+      <div class="card-body">
+        <button id="import-btn" class="btn btn-primary btn-lg mb-3" onclick="startImport()">
+          <i class="bi bi-cloud-arrow-down"></i> Import Now
+        </button>
+        <div id="status-box" class="d-none">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="spinner-border spinner-border-sm text-primary" id="spinner"></div>
+            <span id="status-label" class="fw-bold">Importing…</span>
+          </div>
+          <div id="log-output"
+               class="bg-dark border border-secondary rounded p-3 font-monospace small"
+               style="max-height:300px;overflow-y:auto;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Imported seasons summary -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header"><strong><i class="bi bi-database-check"></i> Imported Seasons</strong></div>
+      <div class="card-body p-0">
+        {% if imported_years %}
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">Year</th><th class="pe-3 text-end">Status</th></tr>
+          </thead>
+          <tbody>
+            {% for y in range(start_year, current_year + 1) %}
+            <tr>
+              <td class="ps-3 fw-bold">{{ y }}</td>
+              <td class="pe-3 text-end">
+                {% if y in imported_years %}
+                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Imported</span>
+                {% else %}
+                <span class="badge bg-secondary">Not imported</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-4 text-muted text-center">
+          <i class="bi bi-inbox fs-1"></i><br>No seasons imported yet.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let pollInterval = null;
+
+function startImport() {
+  document.getElementById('import-btn').disabled = true;
+  document.getElementById('import-btn').innerHTML =
+    '<span class="spinner-border spinner-border-sm"></span> Running…';
+  document.getElementById('status-box').classList.remove('d-none');
+  document.getElementById('log-output').textContent = '';
+
+  fetch('/import', { method: 'POST' })
+    .then(r => r.json())
+    .then(() => {
+      pollInterval = setInterval(pollStatus, 1200);
+    })
+    .catch(err => {
+      document.getElementById('status-label').textContent = 'Error: ' + err;
+    });
+}
+
+function pollStatus() {
+  fetch('/api/import-status')
+    .then(r => r.json())
+    .then(data => {
+      const log = document.getElementById('log-output');
+      log.textContent = data.log.join('\n');
+      log.scrollTop = log.scrollHeight;
+
+      if (data.done) {
+        clearInterval(pollInterval);
+        document.getElementById('spinner').classList.add('d-none');
+        document.getElementById('status-label').textContent = 'Import complete! Refresh the page.';
+        document.getElementById('import-btn').disabled = false;
+        document.getElementById('import-btn').innerHTML =
+          '<i class="bi bi-cloud-arrow-down"></i> Import Now';
+      }
+    });
+}
+</script>
+{% endblock %}

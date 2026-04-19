@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% block title %}Records — {{ league_name }}{% endblock %}
+{% block content %}
+
+<h1 class="mb-4"><i class="bi bi-bar-chart-fill text-primary"></i> All‑Time Records</h1>
+
+{% if not has_data %}
+<div class="alert alert-info">
+  No data imported yet. <a href="/import" class="alert-link">Import league data</a> to get started.
+</div>
+{% else %}
+
+<!-- Championships & Win % -->
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-trophy-fill text-warning"></i> <strong>Most Championships</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">Owner</th><th>Titles</th><th class="pe-3">Years</th></tr>
+          </thead>
+          <tbody>
+            {% for r in most_titles %}
+            <tr>
+              <td class="ps-3"><strong>{{ r['champion_owner'] }}</strong></td>
+              <td>{% for _ in range(r['titles']) %}🏆{% endfor %} {{ r['titles'] }}</td>
+              <td class="pe-3 text-muted small">{{ r['years'] }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted text-center py-3">No data</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-percent text-info"></i> <strong>All‑Time Win Percentage</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>W‑L</th><th>Win%</th><th class="pe-3">PPG</th></tr>
+          </thead>
+          <tbody>
+            {% for r in alltime_pct %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td>{{ r['w'] }}‑{{ r['l'] }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height:6px;min-width:60px;">
+                    <div class="progress-bar bg-success" style="width:{{ r['pct'] }}%"></div>
+                  </div>
+                  {{ r['pct'] }}%
+                </div>
+              </td>
+              <td class="pe-3">{{ r['ppg'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Single season bests / worsts -->
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-lightning-fill text-success"></i> <strong>Most Points — Single Season</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Team</th><th>Year</th><th class="pe-3">Points</th></tr>
+          </thead>
+          <tbody>
+            {% for r in most_points_season %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td class="text-muted small">{{ r['team_name'] }}</td>
+              <td>{{ r['year'] }}</td>
+              <td class="pe-3 fw-bold text-success">{{ "%.2f"|format(r['points_for']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-emoji-frown text-danger"></i> <strong>Fewest Points — Single Season</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Team</th><th>Year</th><th class="pe-3">Points</th></tr>
+          </thead>
+          <tbody>
+            {% for r in fewest_points_season %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td class="text-muted small">{{ r['team_name'] }}</td>
+              <td>{{ r['year'] }}</td>
+              <td class="pe-3 fw-bold text-danger">{{ "%.2f"|format(r['points_for']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-graph-up-arrow text-success"></i> <strong>Best Season Record</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Year</th><th>Record</th><th class="pe-3">PF</th></tr>
+          </thead>
+          <tbody>
+            {% for r in best_record %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td>{{ r['year'] }}</td>
+              <td class="fw-bold text-success">{{ r['wins'] }}‑{{ r['losses'] }}</td>
+              <td class="pe-3">{{ "%.1f"|format(r['points_for']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-graph-down-arrow text-danger"></i> <strong>Worst Season Record</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Year</th><th>Record</th><th class="pe-3">PF</th></tr>
+          </thead>
+          <tbody>
+            {% for r in worst_record %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td>{{ r['year'] }}</td>
+              <td class="fw-bold text-danger">{{ r['wins'] }}‑{{ r['losses'] }}</td>
+              <td class="pe-3">{{ "%.1f"|format(r['points_for']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Matchup Records -->
+<h4 class="mb-3"><i class="bi bi-controller"></i> Matchup Records</h4>
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-fire text-warning"></i> <strong>Highest Single‑Game Score</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Score</th><th>Opponent</th><th class="pe-3">Wk/Yr</th></tr>
+          </thead>
+          <tbody>
+            {% for r in highest_game %}
+            {% if r['home_score'] >= r['away_score'] %}
+              {% set winner = r['home_owner'] %} {% set winner_score = r['home_score'] %}
+              {% set loser  = r['away_owner'] %} {% set loser_score  = r['away_score'] %}
+            {% else %}
+              {% set winner = r['away_owner'] %} {% set winner_score = r['away_score'] %}
+              {% set loser  = r['home_owner'] %} {% set loser_score  = r['home_score'] %}
+            {% endif %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ winner }}</strong></td>
+              <td class="fw-bold text-warning">{{ "%.2f"|format(winner_score) }}</td>
+              <td class="text-muted">{{ loser }} ({{ "%.2f"|format(loser_score) }})</td>
+              <td class="pe-3 small text-muted">Wk{{ r['week'] }}/{{ r['year'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-arrow-left-right text-danger"></i> <strong>Biggest Blowouts</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Winner</th><th>Score</th><th>Loser</th><th>Score</th><th class="pe-3">Margin</th></tr>
+          </thead>
+          <tbody>
+            {% for r in biggest_blowout %}
+            {% if r['home_score'] >= r['away_score'] %}
+              {% set w = r['home_owner'] %} {% set ws = r['home_score'] %}
+              {% set l = r['away_owner'] %} {% set ls = r['away_score'] %}
+            {% else %}
+              {% set w = r['away_owner'] %} {% set ws = r['away_score'] %}
+              {% set l = r['home_owner'] %} {% set ls = r['home_score'] %}
+            {% endif %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ w }}</strong></td>
+              <td class="text-success">{{ "%.2f"|format(ws) }}</td>
+              <td>{{ l }}</td>
+              <td class="text-danger">{{ "%.2f"|format(ls) }}</td>
+              <td class="pe-3 fw-bold text-warning">{{ "%.2f"|format(r['margin']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-dash-circle text-info"></i> <strong>Closest Games</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Winner</th><th>Score</th><th>Loser</th><th>Score</th><th class="pe-3">Margin</th></tr>
+          </thead>
+          <tbody>
+            {% for r in closest_games %}
+            {% if r['home_score'] >= r['away_score'] %}
+              {% set w = r['home_owner'] %} {% set ws = r['home_score'] %}
+              {% set l = r['away_owner'] %} {% set ls = r['away_score'] %}
+            {% else %}
+              {% set w = r['away_owner'] %} {% set ws = r['away_score'] %}
+              {% set l = r['home_owner'] %} {% set ls = r['home_score'] %}
+            {% endif %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ w }}</strong></td>
+              <td class="text-success">{{ "%.2f"|format(ws) }}</td>
+              <td>{{ l }}</td>
+              <td class="text-danger">{{ "%.2f"|format(ls) }}</td>
+              <td class="pe-3 fw-bold text-info">{{ "%.2f"|format(r['margin']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-heartbreak text-danger"></i> <strong>Most Points in a Loss</strong>
+        <small class="text-muted ms-1">(unlucky)</small>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Lost With</th><th class="pe-3">Opp Scored</th></tr>
+          </thead>
+          <tbody>
+            {% for r in most_pts_loss %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td class="fw-bold text-danger">{{ "%.2f"|format(r['losing_score']) }}</td>
+              <td class="pe-3 text-muted">{{ "%.2f"|format(r['winning_score']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-shield-check text-success"></i> <strong>Fewest Points in a Win</strong>
+        <small class="text-muted ms-1">(lucky)</small>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Won With</th><th class="pe-3">Opp Scored</th></tr>
+          </thead>
+          <tbody>
+            {% for r in fewest_pts_win %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td class="fw-bold text-success">{{ "%.2f"|format(r['winning_score']) }}</td>
+              <td class="pe-3 text-muted">{{ "%.2f"|format(r['losing_score']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row align-items-center mb-4">
+  <div class="col">
+    <h1 class="display-5 fw-bold mb-1">
+      <i class="bi bi-trophy-fill text-warning"></i> {{ league_name }}
+    </h1>
+    <p class="text-muted mb-0">Fantasy Football Dashboard</p>
+  </div>
+</div>
+
+{% if not has_data %}
+<div class="alert alert-info d-flex align-items-center gap-2" role="alert">
+  <i class="bi bi-info-circle-fill fs-4"></i>
+  <div>
+    No league data imported yet.
+    <a href="/import" class="alert-link">Import your ESPN data</a> to get started.
+  </div>
+</div>
+{% endif %}
+
+<!-- Championship Banner -->
+{% if champ_counts %}
+<div class="card border-warning mb-4" id="champ-banner">
+  <div class="card-body py-3">
+    <h6 class="text-warning mb-2"><i class="bi bi-star-fill"></i> Championship Roll</h6>
+    <div class="d-flex flex-wrap gap-2">
+      {% for c in champ_counts %}
+      <div class="champ-badge">
+        <span class="fw-bold">{{ c['champion_owner'] }}</span>
+        <span class="ms-1">
+          {% for _ in range(c['titles']) %}🏆{% endfor %}
+        </span>
+        <span class="badge bg-warning text-dark ms-1">{{ c['titles'] }}x</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+
+  <!-- Current season standings -->
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-list-ol text-success"></i>
+        <strong>{{ current_year }} Standings</strong>
+      </div>
+      {% if current_standings %}
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-secondary text-dark">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Owner</th>
+                <th>Team</th>
+                <th>W‑L</th>
+                <th>PF</th>
+                <th>PA</th>
+                <th class="pe-3">Diff</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in current_standings %}
+              <tr {% if loop.index <= 1 %}class="table-success text-dark"{% elif loop.index > current_standings|length - 2 %}class="table-danger"{% endif %}>
+                <td class="ps-3 fw-bold">{{ loop.index }}</td>
+                <td><strong>{{ t['owner'] }}</strong></td>
+                <td class="text-muted small">{{ t['team_name'] }}</td>
+                <td>{{ t['wins'] }}‑{{ t['losses'] }}</td>
+                <td>{{ "%.1f"|format(t['points_for']) }}</td>
+                <td>{{ "%.1f"|format(t['points_against']) }}</td>
+                <td class="pe-3 {% if t['points_for'] >= t['points_against'] %}text-success{% else %}text-danger{% endif %}">
+                  {{ "%+.1f"|format(t['points_for'] - t['points_against']) }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-body text-muted">No standings data for {{ current_year }}.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- All-time wins -->
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i class="bi bi-award-fill text-info"></i>
+        <strong>All‑Time Standings</strong>
+      </div>
+      {% if all_time %}
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-sm align-middle mb-0">
+            <thead class="table-secondary text-dark">
+              <tr>
+                <th class="ps-3">#</th>
+                <th>Owner</th>
+                <th>W</th>
+                <th>L</th>
+                <th>Win%</th>
+                <th class="pe-3">Yrs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in all_time %}
+              <tr>
+                <td class="ps-3 text-muted">{{ loop.index }}</td>
+                <td><strong>{{ t['owner'] }}</strong></td>
+                <td>{{ t['total_wins'] }}</td>
+                <td>{{ t['total_losses'] }}</td>
+                <td>
+                  {% if (t['total_wins'] + t['total_losses']) > 0 %}
+                  {{ "%.0f"|format(t['total_wins'] / (t['total_wins'] + t['total_losses']) * 100) }}%
+                  {% endif %}
+                </td>
+                <td class="pe-3 text-muted">{{ t['seasons_played'] }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-body text-muted">No data yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Points by Season Chart -->
+<div class="card mb-4">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-graph-up text-primary"></i>
+    <strong>Points Scored per Season</strong>
+  </div>
+  <div class="card-body">
+    <canvas id="pointsChart" style="max-height:350px;"></canvas>
+  </div>
+</div>
+
+<!-- Past Champions Table -->
+{% if seasons %}
+<div class="card">
+  <div class="card-header d-flex align-items-center gap-2">
+    <i class="bi bi-calendar-check text-warning"></i>
+    <strong>Season Champions</strong>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th class="ps-3">Year</th>
+            <th>Champion</th>
+            <th>Team</th>
+            <th>Record</th>
+            <th>Points</th>
+            <th>Runner‑Up</th>
+            <th class="pe-3">3rd Place</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in seasons %}
+          <tr>
+            <td class="ps-3 fw-bold">{{ s['year'] }}</td>
+            <td>
+              <span class="badge bg-warning text-dark fs-6">
+                {{ s['champion_owner'] or '—' }}
+              </span>
+            </td>
+            <td class="text-muted small">{{ s['champion_team'] or '—' }}</td>
+            <td>
+              {% if s['champion_wins'] is not none %}
+              {{ s['champion_wins'] }}‑{{ s['champion_losses'] }}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if s['champion_points'] %}
+              {{ "%.1f"|format(s['champion_points']) }}
+              {% else %}—{% endif %}
+            </td>
+            <td>{{ s['runner_up_owner'] or '—' }}</td>
+            <td class="pe-3">{{ s['third_place_owner'] or '—' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch("/api/chart/points-by-season")
+  .then(r => r.json())
+  .then(data => {
+    if (!data.labels || !data.labels.length) return;
+    new Chart(document.getElementById("pointsChart"), {
+      type: "line",
+      data: data,
+      options: {
+        responsive: true,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom", labels: { color: "#ccc", boxWidth: 12 } }
+        },
+        scales: {
+          x: { grid: { color: "#333" }, ticks: { color: "#aaa" } },
+          y: {
+            grid: { color: "#333" }, ticks: { color: "#aaa" },
+            title: { display: true, text: "Total Points", color: "#aaa" }
+          }
+        }
+      }
+    });
+  })
+  .catch(() => {
+    document.getElementById("pointsChart").closest(".card-body").innerHTML =
+      '<p class="text-muted text-center py-4">No chart data available yet.</p>';
+  });
+</script>
+{% endblock %}

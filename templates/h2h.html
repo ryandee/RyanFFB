@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Head-to-Head — {{ league_name }}{% endblock %}
+{% block content %}
+
+<h1 class="mb-2"><i class="bi bi-people-fill text-success"></i> Head‑to‑Head Records</h1>
+<p class="text-muted mb-4">All-time regular season + playoff matchup records between every pair of managers.</p>
+
+{% if not has_data %}
+<div class="alert alert-info">
+  No data imported yet. <a href="/import" class="alert-link">Import league data</a> to get started.
+</div>
+{% elif not owners %}
+<div class="alert alert-secondary">No team data available.</div>
+{% else %}
+
+<p class="text-muted small mb-3">
+  <strong>Row</strong> = the manager reading across &nbsp;|&nbsp;
+  Each cell shows <strong>W‑L</strong> (row owner vs. column owner).
+  Green = winning record, red = losing record.
+</p>
+
+<div class="table-responsive">
+  <table class="table table-bordered align-middle text-center" id="h2h-table">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th class="text-start ps-3">Owner ↓ vs →</th>
+        {% for opp in owners %}
+        <th class="small">{{ opp.split(' ')[0] }}</th>
+        {% endfor %}
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for owner in owners %}
+      <tr>
+        <td class="text-start ps-3 fw-bold">{{ owner }}</td>
+        {% set total_w = namespace(v=0) %}
+        {% set total_l = namespace(v=0) %}
+        {% for opp in owners %}
+          {% if owner == opp %}
+          <td class="table-dark text-muted">—</td>
+          {% else %}
+            {% set rec = h2h_data[owner][opp] %}
+            {% if rec %}
+              {% set total_w.v = total_w.v + rec.wins %}
+              {% set total_l.v = total_l.v + rec.losses %}
+              {% if rec.wins > rec.losses %}
+                <td class="text-success fw-bold">{{ rec.wins }}‑{{ rec.losses }}</td>
+              {% elif rec.wins < rec.losses %}
+                <td class="text-danger">{{ rec.wins }}‑{{ rec.losses }}</td>
+              {% elif rec.wins == 0 and rec.losses == 0 %}
+                <td class="text-muted small">—</td>
+              {% else %}
+                <td>{{ rec.wins }}‑{{ rec.losses }}</td>
+              {% endif %}
+            {% else %}
+            <td class="text-muted">—</td>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        <td class="fw-bold {% if total_w.v > total_l.v %}text-success{% elif total_w.v < total_l.v %}text-danger{% endif %}">
+          {{ total_w.v }}‑{{ total_l.v }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Top rivalries -->
+<h4 class="mt-4 mb-3"><i class="bi bi-lightning-charge-fill text-warning"></i> Top Rivalries (most matchups)</h4>
+<div class="row g-3" id="rivalries">
+  {% for r in rivalries %}
+  <div class="col-sm-6 col-lg-4">
+    <div class="card">
+      <div class="card-body text-center">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="{% if r.w1 > r.l1 %}text-success fw-bold{% elif r.w1 < r.l1 %}text-muted{% else %}fw-bold{% endif %}">
+            {{ r.p1 }}<br><span class="fs-5">{{ r.w1 }}</span>
+          </div>
+          <div class="text-muted small">vs<br><span class="badge bg-secondary">{{ r.total }} games</span></div>
+          <div class="{% if r.l1 > r.w1 %}text-success fw-bold{% elif r.l1 < r.w1 %}text-muted{% else %}fw-bold{% endif %}">
+            {{ r.p2 }}<br><span class="fs-5">{{ r.l1 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12 text-muted">Not enough head-to-head data yet.</div>
+  {% endfor %}
+</div>
+
+{% endif %}
+{% endblock %}

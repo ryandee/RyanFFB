@@ -1,0 +1,116 @@
+/* ── Base ────────────────────────────────────────────────── */
+body {
+  background-color: #0d1117;
+  color: #e6edf3;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Navbar ──────────────────────────────────────────────── */
+#main-nav {
+  background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+  border-bottom: 1px solid #21262d;
+  box-shadow: 0 2px 12px rgba(0,0,0,.5);
+}
+
+#main-nav .navbar-brand {
+  font-size: 1.25rem;
+  letter-spacing: -.3px;
+}
+
+#main-nav .nav-link {
+  color: #8b949e !important;
+  border-radius: 6px;
+  padding: .35rem .75rem;
+  transition: color .15s, background .15s;
+}
+
+#main-nav .nav-link:hover,
+#main-nav .nav-link.active {
+  color: #e6edf3 !important;
+  background: #21262d;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background-color: #161b22;
+  border-color: #21262d;
+  border-radius: 10px;
+}
+
+.card-header {
+  background-color: #1c2128;
+  border-bottom-color: #21262d;
+  padding: .65rem 1rem;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-hover-bg: rgba(255,255,255,.04);
+  color: #e6edf3;
+}
+
+.table-secondary {
+  --bs-table-bg: #21262d;
+  --bs-table-color: #c9d1d9;
+}
+
+thead th {
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 1px solid #30363d !important;
+}
+
+/* ── Championship banner ─────────────────────────────────── */
+#champ-banner {
+  background: linear-gradient(135deg, #1c1906 0%, #161b22 60%);
+  border-color: #d29922 !important;
+}
+
+.champ-badge {
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: .4rem .75rem;
+  font-size: .95rem;
+}
+
+/* ── Progress bars ───────────────────────────────────────── */
+.progress {
+  background-color: #21262d;
+}
+
+/* ── Head-to-head table ──────────────────────────────────── */
+#h2h-table th, #h2h-table td {
+  padding: .4rem .5rem;
+  font-size: .85rem;
+  border-color: #21262d;
+}
+
+#h2h-table thead th {
+  background-color: #1c2128;
+  color: #8b949e;
+}
+
+/* ── Monospace log output ────────────────────────────────── */
+#log-output {
+  font-size: .8rem;
+  line-height: 1.5;
+  color: #7ee787;
+}
+
+/* ── Responsive tweaks ───────────────────────────────────── */
+@media (max-width: 576px) {
+  h1.display-5 { font-size: 1.75rem; }
+  #h2h-table th, #h2h-table td { font-size: .72rem; padding: .3rem .25rem; }
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  margin-top: auto;
+  background: #0d1117;
+}
