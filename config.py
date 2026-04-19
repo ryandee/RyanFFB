@@ -22,8 +22,8 @@ LEAGUE_NAME = "RyanFFB Fantasy Football"
 #   1. Log into ESPN on your browser
 #   2. Open DevTools (F12) → Application → Cookies → espn.com
 #   3. Copy the values for 'espn_s2' and 'SWID'
-ESPN_S2 = None   # e.g. "AEB3Xxxxxx..."
-SWID    = None   # e.g. "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
+ESPN_S2 = "AEAVn0wJbkelwWkiLX%2FYicMbev0QBpAXBpjDPtoyseEqjOMV22AgSy7WEXem1T5VBL6g6%2BKr8pc9CWn2fnSIHvObO8xo6Jh3Y%2BflznZS2KsN9EHVUEPzjWq8Zvwk%2FakUA4RPR16CawHIQRfH4UohM6UVyTXYe92p9QSi95IBk3xJRPbrKsdtZupVqnF5%2BGao%2FBZ0tTWV%2FtPyJvIKf8ADFe%2BCMy81I8IdevgBANcNS2zYOkPue7KGfVUduUYY8hNtzi%2B1H2DEQ5VKaZDrt4wwsHJbE78Y7G0yUu%2FZn%2FhVezB2%2Bw%3D%3D"   # e.g. "AEB3Xxxxxx..."
+SWID    = "{48AB4DF5-3B78-4B76-AB4D-F53B787B767B}"   # e.g. "{XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}"
 
 # -----------------------------------------------------------
 # Internal settings — no need to change these
