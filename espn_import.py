@@ -17,23 +17,50 @@ def _log(msg):
     import_status["log"].append(msg)
 
 
+def _load_league(year):
+    """Load a League while skipping the expensive player/draft/pro-schedule fetches."""
+    try:
+        import espn_api.base_league as _bl
+        from espn_api.football import League
+        from espn_api.football import league as _fl_mod
+    except ImportError:
+        return None, "espn-api not installed. Run: pip install espn-api"
+
+    # Monkey-patch away the three slow/unnecessary extra HTTP calls:
+    #   _fetch_players  → downloads the entire NFL player DB (not needed)
+    #   _fetch_draft    → draft pick history (not needed)
+    #   _get_all_pro_schedule → NFL game schedule per team (not needed for scores)
+    _orig_players  = _bl.BaseLeague._fetch_players
+    _orig_draft    = _bl.BaseLeague._fetch_draft
+    _orig_prosched = _fl_mod.League._get_all_pro_schedule
+
+    _bl.BaseLeague._fetch_players      = lambda self: None
+    _bl.BaseLeague._fetch_draft        = lambda self: None
+    _fl_mod.League._get_all_pro_schedule = lambda self: {}
+
+    try:
+        kwargs = {"league_id": LEAGUE_ID, "year": year}
+        if ESPN_S2 and SWID:
+            kwargs["espn_s2"] = ESPN_S2
+            kwargs["swid"]    = SWID
+        league = League(**kwargs)
+        return league, None
+    except Exception as exc:
+        return None, str(exc)
+    finally:
+        _bl.BaseLeague._fetch_players        = _orig_players
+        _bl.BaseLeague._fetch_draft          = _orig_draft
+        _fl_mod.League._get_all_pro_schedule = _orig_prosched
+
+
 def import_season(year):
     _log(f"Fetching {year} season from ESPN...")
-    try:
-        from espn_api.football import League
-    except ImportError:
-        _log("ERROR: espn-api not installed. Run: pip install espn-api")
+
+    league, err = _load_league(year)
+    if err:
+        _log(f"  Could not fetch {year}: {err}")
         return False
-
-    kwargs = {"league_id": LEAGUE_ID, "year": year}
-    if ESPN_S2 and SWID:
-        kwargs["espn_s2"] = ESPN_S2
-        kwargs["swid"] = SWID
-
-    try:
-        league = League(**kwargs)
-    except Exception as exc:
-        _log(f"  Could not fetch {year}: {exc}")
+    if league is None:
         return False
 
     reg_season_weeks = league.settings.reg_season_count
