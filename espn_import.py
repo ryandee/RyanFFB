@@ -51,8 +51,20 @@ def _fetch(year):
 
     resp = requests.get(url, params=params, cookies=cookies,
                         headers=headers, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+
+    if resp.status_code != 200:
+        raise requests.HTTPError(
+            f"HTTP {resp.status_code}: {resp.text[:300]}", response=resp)
+
+    try:
+        data = resp.json()
+    except Exception:
+        # ESPN returned non-JSON (HTML login wall, redirect, etc.)
+        raise ValueError(
+            f"Non-JSON response (HTTP {resp.status_code}). "
+            f"First 300 chars: {resp.text[:300]}"
+        )
+
     # leagueHistory returns a list; grab the first element
     return data[0] if isinstance(data, list) else data
 
