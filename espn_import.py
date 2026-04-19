@@ -37,10 +37,10 @@ def _fetch(year):
 
     if year >= 2018:
         url    = f"{_BASE}/seasons/{year}/segments/0/leagues/{LEAGUE_ID}"
-        params = {"view": ["mTeam", "mMatchupScore", "mSettings", "mStandings"]}
+        params = {"view": ["mTeam", "mMatchupScore", "mSettings", "mStandings", "mRoster", "mDraftDetail"]}
     else:
         url    = f"{_BASE}/leagueHistory/{LEAGUE_ID}"
-        params = {"view": ["mTeam", "mMatchupScore", "mSettings", "mStandings"],
+        params = {"view": ["mTeam", "mMatchupScore", "mSettings", "mStandings", "mRoster", "mDraftDetail"],
                   "seasonId": year}
 
     resp = requests.get(url, params=params, cookies=cookies,
@@ -159,6 +159,99 @@ def import_season(year):
         _val(sorted_teams, 2, "owner"),
         reg_weeks,
     ))
+
+    # ── Player helpers ────────────────────────────────────────────────────
+    POSITIONS = {1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "DST", 17: "P"}
+    NFL_TEAMS = {
+        1:"ATL", 2:"BUF", 3:"CHI", 4:"CIN", 5:"CLE", 6:"DAL", 7:"DEN",
+        8:"DET", 9:"GB", 10:"TEN", 11:"IND", 12:"KC", 13:"LV", 14:"LAR",
+        15:"MIA", 16:"MIN", 17:"NE", 18:"NO", 19:"NYG", 20:"NYJ", 21:"PHI",
+        22:"ARI", 23:"PIT", 24:"LAC", 25:"SF", 26:"SEA", 27:"TB", 28:"WSH",
+        29:"CAR", 30:"JAX", 33:"BAL", 34:"HOU", 0:"FA",
+    }
+
+    # Build player_id -> info from every team's roster entries
+    player_info = {}
+    for t in data.get("teams", []):
+        for entry in t.get("roster", {}).get("entries", []):
+            ppe    = entry.get("playerPoolEntry") or {}
+            player = ppe.get("player") or {}
+            pid    = player.get("id")
+            if not pid:
+                continue
+            position = POSITIONS.get(player.get("defaultPositionId"), "UNK")
+            nfl_team = NFL_TEAMS.get(player.get("proTeamId"), "?")
+
+            # Season total: scoringPeriodId==0, statSourceId==0 (actual, not projected)
+            total_pts = 0.0
+            avg_pts   = 0.0
+            for stat in player.get("stats") or []:
+                if stat.get("scoringPeriodId") == 0 and stat.get("statSourceId") == 0:
+                    total_pts = stat.get("appliedTotal") or 0.0
+                    avg_pts   = stat.get("appliedAverage") or 0.0
+                    break
+
+            player_info[pid] = {
+                "name":        player.get("fullName", f"Player {pid}"),
+                "position":    position,
+                "nfl_team":    nfl_team,
+                "total_pts":   total_pts,
+                "avg_pts":     avg_pts,
+                "acq_type":    entry.get("acquisitionType") or ppe.get("acquisitionType") or "UNKNOWN",
+                "team_id":     t["id"],
+            }
+
+    # ── Persist draft picks ────────────────────────────────────────────────
+    conn.execute("DELETE FROM draft_picks    WHERE year = ?", (year,))
+    conn.execute("DELETE FROM roster_players WHERE year = ?", (year,))
+
+    for pick in data.get("draftDetail", {}).get("picks") or []:
+        pid     = pick.get("playerId")
+        team_id = pick.get("teamId")
+        if not pid or team_id not in team_map:
+            continue
+        info = player_info.get(pid, {})
+        t    = team_map[team_id]
+        conn.execute("""
+            INSERT OR IGNORE INTO draft_picks
+              (year, overall_pick, round, round_pick, team_owner, team_name,
+               player_id, player_name, position, nfl_team, bid_amount, is_keeper)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            year,
+            pick.get("overallPickNumber") or 0,
+            pick.get("roundId") or 0,
+            pick.get("roundPickNumber") or 0,
+            t["owner"], t["team_name"],
+            pid,
+            info.get("name", f"Player {pid}"),
+            info.get("position", "UNK"),
+            info.get("nfl_team", "?"),
+            pick.get("bidAmount") or 0,
+            1 if pick.get("keeper") else 0,
+        ))
+
+    # ── Persist roster players ─────────────────────────────────────────────
+    for pid, info in player_info.items():
+        t = team_map.get(info["team_id"], {})
+        if not t:
+            continue
+        conn.execute("""
+            INSERT OR REPLACE INTO roster_players
+              (year, team_owner, team_name, player_id, player_name, position,
+               nfl_team, acquisition_type, total_points, avg_points)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            year,
+            t["owner"], t["team_name"],
+            pid,
+            info["name"],
+            info["position"],
+            info["nfl_team"],
+            info["acq_type"],
+            info["total_pts"],
+            info["avg_pts"],
+        ))
 
     matchup_count = 0
     for m in data.get("schedule", []):
