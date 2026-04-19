@@ -408,12 +408,25 @@ def draft():
         ORDER BY d.round
     """).fetchall()
 
+    # Average final standings position for each round-1 pick slot
+    pick1_finish = conn.execute("""
+        SELECT d.round_pick,
+               ROUND(AVG(t.final_standing), 2) AS avg_finish,
+               COUNT(*) AS seasons
+        FROM draft_picks d
+        JOIN teams t ON t.year = d.year AND t.owner = d.team_owner
+        WHERE d.round = 1 AND t.final_standing > 0
+        GROUP BY d.round_pick
+        ORDER BY d.round_pick
+    """).fetchall()
+
     conn.close()
     return render_template("draft.html",
         league_name=LEAGUE_NAME,
         best_value=best_value,
         busts=busts,
         round_avgs=round_avgs,
+        pick1_finish=pick1_finish,
         has_data=_has_data(),
     )
 
