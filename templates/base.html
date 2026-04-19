@@ -41,6 +41,11 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'sacko' %}active{% endif %}" href="/sacko">
+            🚽 Sacko
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'import_view' %}active{% endif %}" href="/import">
             <i class="bi bi-cloud-arrow-down-fill"></i> Import
           </a>

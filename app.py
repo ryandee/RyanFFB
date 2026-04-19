@@ -249,6 +249,110 @@ def h2h():
     )
 
 
+@app.route("/sacko")
+def sacko():
+    conn = get_db()
+
+    # Sacko = last-place finisher each year (highest final_standing)
+    sacko_history = conn.execute("""
+        SELECT t.year, t.owner, t.team_name, t.wins, t.losses, t.ties,
+               t.points_for, t.points_against, t.final_standing
+        FROM teams t
+        WHERE t.final_standing = (
+            SELECT MAX(final_standing) FROM teams t2 WHERE t2.year = t.year
+        )
+        ORDER BY t.year DESC
+    """).fetchall()
+
+    # All-time Sacko count per owner
+    sacko_counts = conn.execute("""
+        SELECT t.owner, COUNT(*) AS sacko_count,
+               GROUP_CONCAT(t.year, ', ') AS years
+        FROM teams t
+        WHERE t.final_standing = (
+            SELECT MAX(final_standing) FROM teams t2 WHERE t2.year = t.year
+        )
+        GROUP BY t.owner
+        ORDER BY sacko_count DESC
+    """).fetchall()
+
+    # Worst single-season record among Sacko teams
+    worst_record = conn.execute("""
+        SELECT t.owner, t.team_name, t.year, t.wins, t.losses, t.points_for
+        FROM teams t
+        WHERE t.final_standing = (
+            SELECT MAX(final_standing) FROM teams t2 WHERE t2.year = t.year
+        )
+        ORDER BY t.wins ASC, t.points_for ASC
+        LIMIT 5
+    """).fetchall()
+
+    # Fewest points in a season by a Sacko team
+    fewest_points = conn.execute("""
+        SELECT t.owner, t.team_name, t.year, t.points_for, t.wins, t.losses
+        FROM teams t
+        WHERE t.final_standing = (
+            SELECT MAX(final_standing) FROM teams t2 WHERE t2.year = t.year
+        )
+        ORDER BY t.points_for ASC
+        LIMIT 5
+    """).fetchall()
+
+    # Lowest single-game score by a Sacko team (reg season only)
+    worst_game = conn.execute("""
+        SELECT m.year, m.week, m.home_owner, m.home_score, m.away_owner, m.away_score,
+               MIN(m.home_score, m.away_score) AS low_score,
+               CASE WHEN m.home_score < m.away_score THEN m.home_owner ELSE m.away_owner END AS loser_owner
+        FROM matchups m
+        WHERE m.is_playoff = 0
+          AND (
+            (m.home_owner = (SELECT t.owner FROM teams t WHERE t.year=m.year
+                             AND t.final_standing=(SELECT MAX(final_standing) FROM teams t2 WHERE t2.year=t.year)
+                             LIMIT 1)
+             AND m.home_score < m.away_score)
+            OR
+            (m.away_owner = (SELECT t.owner FROM teams t WHERE t.year=m.year
+                             AND t.final_standing=(SELECT MAX(final_standing) FROM teams t2 WHERE t2.year=t.year)
+                             LIMIT 1)
+             AND m.away_score < m.home_score)
+          )
+        ORDER BY low_score ASC
+        LIMIT 5
+    """).fetchall()
+
+    # Biggest blowout loss by a Sacko team
+    biggest_loss = conn.execute("""
+        SELECT m.year, m.week,
+               CASE WHEN m.home_score < m.away_score THEN m.home_owner ELSE m.away_owner END AS sacko_owner,
+               CASE WHEN m.home_score < m.away_score THEN m.home_score ELSE m.away_score END AS sacko_score,
+               CASE WHEN m.home_score > m.away_score THEN m.home_owner ELSE m.away_owner END AS opp_owner,
+               CASE WHEN m.home_score > m.away_score THEN m.home_score ELSE m.away_score END AS opp_score,
+               ABS(m.home_score - m.away_score) AS margin
+        FROM matchups m
+        WHERE (
+            m.home_owner IN (SELECT t.owner FROM teams t WHERE t.year=m.year
+                             AND t.final_standing=(SELECT MAX(final_standing) FROM teams t2 WHERE t2.year=t.year))
+            OR
+            m.away_owner IN (SELECT t.owner FROM teams t WHERE t.year=m.year
+                             AND t.final_standing=(SELECT MAX(final_standing) FROM teams t2 WHERE t2.year=t.year))
+        )
+        ORDER BY margin DESC
+        LIMIT 5
+    """).fetchall()
+
+    conn.close()
+    return render_template("sacko.html",
+        league_name=LEAGUE_NAME,
+        sacko_history=sacko_history,
+        sacko_counts=sacko_counts,
+        worst_record=worst_record,
+        fewest_points=fewest_points,
+        worst_game=worst_game,
+        biggest_loss=biggest_loss,
+        has_data=_has_data(),
+    )
+
+
 @app.route("/import", methods=["GET", "POST"])
 def import_view():
     if request.method == "POST":

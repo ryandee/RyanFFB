@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% block title %}Sacko — {{ league_name }}{% endblock %}
+{% block content %}
+
+<div class="row align-items-center mb-4">
+  <div class="col">
+    <h1 class="fw-bold mb-1">
+      <span style="font-size:1.4rem;">🚽</span> The Sacko
+    </h1>
+    <p class="text-muted mb-0">Last place in the loser's bracket — the ultimate shame.</p>
+  </div>
+</div>
+
+{% if not has_data %}
+<div class="alert alert-info">
+  No data imported yet. <a href="/import" class="alert-link">Import league data</a> to get started.
+</div>
+{% else %}
+
+<!-- Hall of Shame -->
+<div class="card mb-4" style="border-color:#6f1d1d;">
+  <div class="card-header" style="background:#2a0a0a;border-color:#6f1d1d;">
+    <h5 class="mb-0">🏚️ Hall of Shame — Most Sacko Appearances</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th class="ps-3">#</th>
+            <th>Owner</th>
+            <th>Sacko Count</th>
+            <th class="pe-3">Years</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in sacko_counts %}
+          <tr {% if loop.index == 1 %}style="background:rgba(180,0,0,.15);"{% endif %}>
+            <td class="ps-3">
+              {% if loop.index == 1 %}🚽{% else %}{{ loop.index }}{% endif %}
+            </td>
+            <td><strong>{{ r['owner'] }}</strong></td>
+            <td>
+              {% for _ in range(r['sacko_count']) %}💩{% endfor %}
+              <span class="ms-1 badge bg-danger">{{ r['sacko_count'] }}x</span>
+            </td>
+            <td class="pe-3 text-muted small">{{ r['years'] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Year-by-year history -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">📅 Sacko History by Season</h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th class="ps-3">Year</th>
+            <th>Sacko Owner</th>
+            <th>Team Name</th>
+            <th>Record</th>
+            <th>Points For</th>
+            <th class="pe-3">Points Against</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sacko_history %}
+          <tr>
+            <td class="ps-3 fw-bold">{{ s['year'] }}</td>
+            <td>
+              <span class="badge bg-danger fs-6">🚽 {{ s['owner'] }}</span>
+            </td>
+            <td class="text-muted small fst-italic">{{ s['team_name'] }}</td>
+            <td class="text-danger fw-bold">{{ s['wins'] }}-{{ s['losses'] }}</td>
+            <td>{{ "%.2f"|format(s['points_for']) }}</td>
+            <td class="pe-3">{{ "%.2f"|format(s['points_against']) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Shame Stats -->
+<h4 class="mb-3">💀 Sacko Shame Stats</h4>
+<div class="row g-4 mb-4">
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <strong>Worst Sacko Season Record</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Year</th><th>Record</th><th class="pe-3">PF</th></tr>
+          </thead>
+          <tbody>
+            {% for r in worst_record %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td>{{ r['year'] }}</td>
+              <td class="fw-bold text-danger">{{ r['wins'] }}-{{ r['losses'] }}</td>
+              <td class="pe-3">{{ "%.1f"|format(r['points_for']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <strong>Fewest Points in a Sacko Season</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Year</th><th class="pe-3">Points</th></tr>
+          </thead>
+          <tbody>
+            {% for r in fewest_points %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['owner'] }}</strong></td>
+              <td>{{ r['year'] }}</td>
+              <td class="pe-3 fw-bold text-danger">{{ "%.2f"|format(r['points_for']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <strong>Worst Single Game by a Sacko Team</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Owner</th><th>Score</th><th>Opp Score</th><th class="pe-3">Wk/Yr</th></tr>
+          </thead>
+          <tbody>
+            {% for r in worst_game %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['loser_owner'] }}</strong></td>
+              <td class="fw-bold text-danger">{{ "%.2f"|format(r['low_score']) }}</td>
+              <td class="text-muted">
+                {% if r['home_score'] < r['away_score'] %}
+                  {{ "%.2f"|format(r['away_score']) }}
+                {% else %}
+                  {{ "%.2f"|format(r['home_score']) }}
+                {% endif %}
+              </td>
+              <td class="pe-3 small text-muted">Wk{{ r['week'] }}/{{ r['year'] }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <strong>Biggest Blowout Loss by a Sacko Team</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-secondary text-dark">
+            <tr><th class="ps-3">#</th><th>Sacko</th><th>Score</th><th>Opp</th><th>Score</th><th class="pe-3">Margin</th></tr>
+          </thead>
+          <tbody>
+            {% for r in biggest_loss %}
+            <tr>
+              <td class="ps-3 text-muted">{{ loop.index }}</td>
+              <td><strong>{{ r['sacko_owner'] }}</strong></td>
+              <td class="text-danger">{{ "%.2f"|format(r['sacko_score']) }}</td>
+              <td>{{ r['opp_owner'] }}</td>
+              <td class="text-success">{{ "%.2f"|format(r['opp_score']) }}</td>
+              <td class="pe-3 fw-bold text-warning">{{ "%.2f"|format(r['margin']) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}
