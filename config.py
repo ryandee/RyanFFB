@@ -7,7 +7,7 @@
 LEAGUE_ID = 764891
 
 # First season of your league
-START_YEAR = 2014
+START_YEAR = 2015
 
 # Most recent completed season (update each year)
 CURRENT_YEAR = 2025
