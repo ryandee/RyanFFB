@@ -356,25 +356,45 @@ def sacko():
 def draft():
     conn = get_db()
 
-    # Best value: highest scorers drafted in round 5 or later
+    # Position averages per year — used to normalize across positions
+    # so QBs (who naturally score more) don't dominate the value lists.
+    # value_score = player's points minus the avg for their position that year.
     best_value = conn.execute("""
+        WITH pos_avg AS (
+            SELECT r.year, d.position, AVG(r.total_points) AS avg_pts
+            FROM draft_picks d
+            JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+            WHERE r.total_points > 0
+            GROUP BY r.year, d.position
+        )
         SELECT d.overall_pick, d.round, d.round_pick, d.player_name,
-               d.position, d.nfl_team, d.team_owner, d.year, r.total_points
+               d.position, d.nfl_team, d.team_owner, d.year, r.total_points,
+               ROUND(r.total_points - pa.avg_pts, 1) AS value_score
         FROM draft_picks d
         JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+        JOIN pos_avg pa ON pa.year = d.year AND pa.position = d.position
         WHERE d.round >= 5 AND r.total_points > 0
-        ORDER BY r.total_points DESC
+        ORDER BY value_score DESC
         LIMIT 20
     """).fetchall()
 
-    # Biggest busts: lowest scorers drafted in rounds 1-2
+    # Biggest busts: drafted in rounds 1-2 but scored well below their position avg
     busts = conn.execute("""
+        WITH pos_avg AS (
+            SELECT r.year, d.position, AVG(r.total_points) AS avg_pts
+            FROM draft_picks d
+            JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+            WHERE r.total_points > 0
+            GROUP BY r.year, d.position
+        )
         SELECT d.overall_pick, d.round, d.round_pick, d.player_name,
-               d.position, d.nfl_team, d.team_owner, d.year, r.total_points
+               d.position, d.nfl_team, d.team_owner, d.year, r.total_points,
+               ROUND(r.total_points - pa.avg_pts, 1) AS value_score
         FROM draft_picks d
         JOIN roster_players r ON d.player_id = r.player_id AND d.year = r.year
+        JOIN pos_avg pa ON pa.year = d.year AND pa.position = d.position
         WHERE d.round <= 2 AND r.total_points > 0
-        ORDER BY r.total_points ASC
+        ORDER BY value_score ASC
         LIMIT 20
     """).fetchall()
 

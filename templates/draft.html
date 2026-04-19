@@ -32,7 +32,8 @@
             <th>Pick</th>
             <th>Round</th>
             <th>Owner</th>
-            <th class="pe-3">Season Pts</th>
+            <th>Season Pts</th>
+            <th class="pe-3" title="Points above average for their position that year">+/- Pos Avg</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +46,8 @@
             <td class="text-muted">{{ p['overall_pick'] }}</td>
             <td class="text-muted">Rd {{ p['round'] }}.{{ p['round_pick'] }}</td>
             <td>{{ p['team_owner'] }}</td>
-            <td class="pe-3 text-success fw-bold">{{ "%.1f"|format(p['total_points']) }}</td>
+            <td>{{ "%.1f"|format(p['total_points']) }}</td>
+            <td class="pe-3 text-success fw-bold">+{{ "%.1f"|format(p['value_score']) }}</td>
           </tr>
           {% else %}
           <tr><td colspan="8" class="text-center text-muted py-3">No data — run an import first.</td></tr>
@@ -73,7 +75,8 @@
             <th>Pick</th>
             <th>Round</th>
             <th>Owner</th>
-            <th class="pe-3">Season Pts</th>
+            <th>Season Pts</th>
+            <th class="pe-3" title="Points above average for their position that year">+/- Pos Avg</th>
           </tr>
         </thead>
         <tbody>
@@ -86,7 +89,8 @@
             <td class="text-muted">{{ p['overall_pick'] }}</td>
             <td class="text-muted">Rd {{ p['round'] }}.{{ p['round_pick'] }}</td>
             <td>{{ p['team_owner'] }}</td>
-            <td class="pe-3 text-danger fw-bold">{{ "%.1f"|format(p['total_points']) }}</td>
+            <td>{{ "%.1f"|format(p['total_points']) }}</td>
+            <td class="pe-3 text-danger fw-bold">{{ "%.1f"|format(p['value_score']) }}</td>
           </tr>
           {% else %}
           <tr><td colspan="8" class="text-center text-muted py-3">No data — run an import first.</td></tr>
